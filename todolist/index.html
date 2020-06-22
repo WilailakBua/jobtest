@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <meta charset="utf-8">
+    
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css" integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
+    
+        <style>
+            .completed {
+                color: #AA00E0;
+                text-decoration: line-through;
+            }
+            .addbutton {
+                background-color: #fff2e5;
+                border-radius: 4px;
+                /* color: white; */
+
+            }
+            input[type=text] {
+                background-color: #fff2e5;
+                border: none;
+                border-radius: 4px;
+                height: 38px;
+                width: 30%;
+                /* color: white; */
+            }
+            .divcard{
+                /* background-color: #beebe9; */
+                height: 50%;
+                text-align: center;
+                margin-top: 30px;
+                background-color: #eb9788;
+                padding: .5rem;
+                display: flex;
+                flex-direction: column;
+                border-radius: 5px;
+            }
+            .my_image{
+                width: 50px;
+                height: 50px;
+                z-index: 3 ;
+            }
+        </style>
+    </head>
+    <body>
+
+        <div class="container divcard">
+            <div style="padding: .5rem; background-color: #b7472a; border-radius: 5px;">
+                <H1 style="font-family: Arial; color: #ffd5ab;">
+                    To Do List
+                </H1>
+                <input type="text" id="todolist">
+                <button type="button" class="btn addbutton" id="addlist">Add</button>
+            </div>
+            <div style="margin-top: 20px;">
+                    <table id="mylist" class="table" style="height: 15px;"></table>
+            </div>  
+        </div>
+    
+    </body>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@8"></script>
+
+    <script>
+        let data ={
+            str : ""
+        }
+        let reload = false
+
+        $(document).ready(function() { 
+
+            $("#addlist").click(function(){
+                data.str = $("#todolist").val();
+                // console.log(data.str);
+                $.ajax({
+                        type: "POST",
+                        url: "http://localhost:8080/insert_list",
+                        data: data   
+                });
+                $.ajax({
+                        type: "POST",
+                        url: "http://localhost:8080/insert_listdetail",
+                        data: data           
+                });
+                location.reload();
+            })  
+
+            $.post("http://localhost:8080/show_listdetail", function(data) {
+
+                let listdetail = ""
+                for (let i = 0; i < data.length; i++)
+                {
+                    if(data[i].liststatus === "complete")
+                    {  
+                        listdetail += 
+                        "<tr id='"+ data[i].idlist +"'>" +
+                            "<td " + "id="+ data[i].idlist + " class='completed'>" + data[i].list +  "</td>" +
+                            "<td " + "id="+ data[i].idlist + ">" + '<img id="'+ data[i].idlist + '" src="delete.png" class="my_image" onclick="delrow(this)"/>' + "</td>" +  
+                        "</tr>";
+                    } else if (data[i].liststatus === "new")
+                    {
+                        listdetail += 
+                        "<tr id='"+ data[i].idlist +"'>" +
+                            "<td " + "id="+ data[i].idlist + ">" + data[i].list + "</td>" +
+                            "<td " + "id="+ data[i].idlist + ">" + '<img id="'+ data[i].idlist + '" src="delete.png" class="my_image" onclick="delrow(this)"/>' + "</td>" +  
+                        "</tr>";   
+                    }     
+                }
+                $("#mylist").append(listdetail) 
+  
+            });
+            
+            $("table").on("click", "td", function(){
+                $(this).toggleClass("completed");
+                myFunctioncheck(this);
+            });
+        });
+
+
+        function delrow(rowid){
+            // console.log("rowid ==> ", rowid)
+            var i = rowid.parentNode.parentNode.rowIndex;
+            document.getElementById("mylist").deleteRow(i);
+            console.log("i => ", i)
+
+            $.ajax({
+                type: "POST",
+                url: "http://localhost:8080/delete_list",
+
+                data: {
+                    "id": rowid.id,
+                    "status": 'cancel'
+                }
+            });
+        }
+
+       
+
+        function myFunctioncheck(idcheck)
+        {
+            var id = $(idcheck).attr("id");
+
+            // console.log(id);
+            // console.log($(idcheck).attr("class"));
+
+            if($(idcheck).attr("class") == "completed"){
+                var status = "complete"
+            } else {
+                var status = "new"
+            }
+            $.ajax({
+                type: "POST",
+                url: "http://localhost:8080/update_checklist",
+                data: {
+                    "id": id,
+                    "status": status
+                }
+            });
+        }
+    </script>
+</html>
